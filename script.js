@@ -84,8 +84,8 @@ const MEDICINES = [
     purpose: 'চুলকানি নিয়ন্ত্রণ, রাতে ভালো ঘুম',
     whyPrescribed: 'Scalp Psoriasis-এর তীব্র চুলকানি নিয়ন্ত্রণের জন্য। রাতে দেওয়া হয়েছে কারণ রাতে চুলকানি বাড়ে এবং ঘুমের মধ্যে অজান্তে চুলকালে ক্ষত বাড়ে।',
     howItWorks: 'Non-sedating antihistamine — histamine receptor block করে চুলকানি কমায়। ঘুমে কম ঘুম পাড়ায় না কিন্তু inflammation-driven itch কমায়।',
-    dose: 'রাতে ২টি ট্যাবলেট (240mg total)',
-    timing: [{ time: 'night', label: 'রাতে ২টি', dose: '2 × 120mg' }],
+    dose: 'রাতে ১টি ট্যাবলেট (120mg total)',
+    timing: [{ time: 'night', label: 'রাতে ১টি', dose: '1 × 120mg' }],
     expectedResults: 'প্রথম রাত থেকেই চুলকানি কম। ১ সপ্তাহে উল্লেখযোগ্য পার্থক্য।',
     precautions: 'খাবার সাথে বা পরে খান। Juice (grapefruit/orange/apple) এড়িয়ে চলুন — absorption কমায়। Antacid খেলে Fixal-এর ২ ঘণ্টা আগে বা পরে খান।',
     sideEffects: 'মাথাব্যথা (কদাচিৎ), বমি ভাব (খুব কম)',
@@ -102,8 +102,8 @@ const MEDICINES = [
     purpose: 'Liver support, cellular health, steroid-এর সময় protection',
     whyPrescribed: 'Topical steroid ব্যবহারকালীন cellular ও liver support এবং সামগ্রিক nutritional ও metabolic support।',
     howItWorks: 'Betaine ও Methionine liver-এ methylation process সচল রাখে। B-vitamins cellular energy ও nerve function সমর্থন করে।',
-    dose: 'সকালে ২টি ট্যাবলেট',
-    timing: [{ time: 'morning', label: 'সকালে ২টি', dose: '2 tabs' }],
+    dose: 'সকালে ১টি ট্যাবলেট',
+    timing: [{ time: 'morning', label: 'সকালে ১টি', dose: '1 tab' }],
     expectedResults: 'সাধারণ শক্তি ও metabolism সহায়তা — পরোক্ষভাবে treatment সাপোর্ট করে।',
     precautions: 'সকালে খাবারের সাথে খান। নিয়মিত খাওয়া জরুরি।',
     sideEffects: 'সাধারণত কোনো পার্শ্বপ্রতিক্রিয়া নেই',
@@ -242,7 +242,7 @@ function getMedsForDay(dateStr) {
       meds.push({ ...m, timeSlot: 'night', instanceId: m.id });
     } else if (m.id === 'biovel') {
       // বায়োভেল ট্যাবলেটের জন্য সঠিকভাবে ইন্সট্যান্স সেট করা হলো
-      meds.push({ ...m, timeSlot: 'morning', instanceId: m.id });
+      meds.push({ ...m, timeSlot: 'lunch', instanceId: m.id });
     }
   });
   return meds;
@@ -358,8 +358,8 @@ function renderDashboard(el) {
     });
     todayMedHtml = sorted.map(m => {
       const status = getStatusForInstance(todayStr, m.instanceId);
-      const chipClass = { morning: 'chip-morning', night: 'chip-night', anytime: 'chip-anytime' }[m.timeSlot] || 'chip-anytime';
-      const chipLabel = { morning: 'সকাল', night: 'রাত', anytime: 'যেকোনো সময়' }[m.timeSlot] || '';
+      const chipClass = { morning: 'chip-morning',  night: 'chip-night', anytime: 'chip-anytime' }[m.timeSlot] || 'chip-anytime';
+      const chipLabel = { morning: 'সকাল', lunch:'দুপুর', night: 'রাত', anytime: 'যেকোনো সময়' }[m.timeSlot] || '';
       const btnClass = { taken: 'taken', missed: 'missed', pending: '' }[status] || '';
       const btnIcon = { taken: '✓', missed: '✗', pending: '◯' }[status] || '◯';
       const itemClass = status === 'taken' ? 'item-taken' : '';
@@ -369,7 +369,7 @@ function renderDashboard(el) {
           <div class="med-name">${m.name}</div>
           <div class="med-detail">
             <span class="med-timing-chip ${chipClass}">${chipLabel}</span>
-            ${m.id === 'fixal' ? ' · ২টি' : ''}${m.id === 'biovel' ? ' · ২টি' : ''}
+            ${m.id === 'fixal' ? ' · ১টি' : ''}${m.id === 'biovel' ? ' · ১টি' : ''}
           </div>
         </div>
         <button class="take-btn ${btnClass}" data-action="toggle" data-iid="${m.instanceId}" data-date="${todayStr}">
@@ -611,13 +611,121 @@ function renderMedCard(m) {
   </div>`;
 }
 
-// ── ROUTINE PAGE ──────────────────────────────────────────
+// // ── ROUTINE PAGE ──────────────────────────────────────────
+// function renderRoutine(el) {
+//   const todayStr = today();
+//   const meds = getMedsForDay(todayStr);
+//   const morning = meds.filter(m => m.timeSlot === 'morning');
+//   const anytime = meds.filter(m => m.timeSlot === 'anytime');
+//   const night = meds.filter(m => m.timeSlot === 'night');
+
+//   const shampooThisWeek = getShampooWeekDays();
+
+//   const blockHtml = (icon, name, sub, items, extra = '') => {
+//     const count = items.length;
+//     const doneCount = items.filter(m => getStatusForInstance(todayStr, m.instanceId) === 'taken').length;
+//     const itemsHtml = items.map(m => {
+//       const status = getStatusForInstance(todayStr, m.instanceId);
+//       const done = status === 'taken';
+//       return `<div class="routine-item">
+//         <span class="routine-med-icon">${m.icon}</span>
+//         <div class="routine-info">
+//           <div class="routine-name">${m.name}</div>
+//           <div class="routine-desc">${m.id === 'fixal' ? '১টি ট্যাবলেট' : m.id === 'biovel' ? '১টি ট্যাবলেট' : m.id === 'prosalic' ? 'Scalp-এ লাগান, ১৫ মিনিট রাখুন' : m.id === 'bistar' ? '৫ মিনিট রেখে ধুয়ে ফেলুন' : ''}</div>
+//         </div>
+//         <button class="routine-check ${done ? 'done' : ''}" data-action="rtoggle" data-iid="${m.instanceId}" data-date="${todayStr}">
+//           ${done ? '✓' : ''}
+//         </button>
+//       </div>`;
+//     }).join('') || `<div style="padding:.75rem 1rem;font-size:.82rem;color:var(--text-soft)">এই সময়ে কোনো treatment নেই</div>`;
+
+//     return `<div class="time-block card">
+//       <div class="time-block-header">
+//         <span class="time-icon">${icon}</span>
+//         <div>
+//           <div class="time-name">${name}</div>
+//           <div class="time-sub">${sub}</div>
+//         </div>
+//         ${count ? `<div class="time-count">${doneCount}/${count}</div>` : ''}
+//       </div>
+//       ${itemsHtml}
+//       ${extra}
+//     </div>`;
+//   };
+
+//   const shampooWeekHtml = `<div class="shampoo-sched">
+//     <div class="shampoo-sched-title">🗓 এই সপ্তাহের Shampoo Schedule</div>
+//     <div class="shampoo-days">${shampooThisWeek}</div>
+//   </div>`;
+
+//   // Shampoo picker
+//   const pickerHtml = `<div class="card card-pad" style="margin-bottom:.75rem">
+//     <div class="section-label" style="margin-bottom:.6rem">Shampoo-র দিন বেছে নিন (সপ্তাহে ২টি)</div>
+//     <div class="day-picker">
+//       ${DAYS_EN.map((d, i) => `<button class="day-pick-btn ${(i === state.shampooDay1 || i === state.shampooDay2) ? 'selected' : ''}" data-day="${i}">${DAYS_BN[i]}</button>`).join('')}
+//     </div>
+//   </div>`;
+
+//   el.innerHTML = `<div class="page">
+//     <div class="section-label">আজকের Routine — ${todayStr}</div>
+//     ${blockHtml('☀️', 'সকাল', '৭টা – ৯টা', morning)}
+//     ${blockHtml('🌤', 'দুপুর / বিকেল', 'যদি Shampoo দিন হয়', anytime, isShampooDay(todayStr) ? '' : '')}
+//     ${blockHtml('🌙', 'রাত', 'ঘুমানোর আগে', night)}
+//     ${shampooWeekHtml}
+//     ${pickerHtml}
+
+//     <div class="card card-pad">
+//       <div class="section-label" style="margin-bottom:.6rem">Hair Colour সতর্কতা</div>
+//       <div class="warn-box">
+//         <span class="warn-icon">⚠️</span>
+//         <span>Hair colour দেওয়ার ৪৮ ঘণ্টা আগে ও পরে Prosalic Solution ব্যবহার করবেন না। Treatment চলাকালীন hair colour যতটা সম্ভব এড়িয়ে চলুন।</span>
+//       </div>
+//     </div>
+//   </div>`;
+
+//   el.querySelectorAll('[data-action="rtoggle"]').forEach(btn => {
+//     btn.addEventListener('click', () => {
+//       const iid = btn.dataset.iid;
+//       const date = btn.dataset.date;
+//       const cur = getStatusForInstance(date, iid);
+//       setStatus(date, iid, cur === 'taken' ? 'pending' : 'taken');
+//       showToast(cur !== 'taken' ? '✓ সম্পন্ন' : '↩ পূর্বে ফিরেছে');
+//       renderPage('routine');
+//     });
+//   });
+
+//   el.querySelectorAll('.day-pick-btn').forEach(btn => {
+//     btn.addEventListener('click', () => {
+//       const day = parseInt(btn.dataset.day);
+//       if (day === state.shampooDay1 || day === state.shampooDay2) {
+//         // deselect
+//         if (day === state.shampooDay1) state.shampooDay1 = -1;
+//         else state.shampooDay2 = -1;
+//         // normalize
+//         const selected = [state.shampooDay1, state.shampooDay2].filter(d => d >= 0);
+//         state.shampooDay1 = selected[0] ?? 1;
+//         state.shampooDay2 = selected[1] ?? 4;
+//       } else {
+//         // assign
+//         if (state.shampooDay1 < 0) state.shampooDay1 = day;
+//         else state.shampooDay2 = day;
+//       }
+//       save();
+//       renderPage('routine');
+//     });
+//   });
+// }
+
+// ── ROUTINE PAGE (UPDATED) ──────────────────────────────────────────
 function renderRoutine(el) {
   const todayStr = today();
   const meds = getMedsForDay(todayStr);
+  
+  // এখানে দুপুরের ফিল্টারটি (lunch) নতুন যুক্ত করা হলো
   const morning = meds.filter(m => m.timeSlot === 'morning');
+  const lunch   = meds.filter(m => m.timeSlot === 'lunch'); // 👈 নতুন ফিল্টার
   const anytime = meds.filter(m => m.timeSlot === 'anytime');
-  const night = meds.filter(m => m.timeSlot === 'night');
+  const night   = meds.filter(m => m.timeSlot === 'night');
 
   const shampooThisWeek = getShampooWeekDays();
 
@@ -631,13 +739,13 @@ function renderRoutine(el) {
         <span class="routine-med-icon">${m.icon}</span>
         <div class="routine-info">
           <div class="routine-name">${m.name}</div>
-          <div class="routine-desc">${m.id === 'fixal' ? '২টি ট্যাবলেট' : m.id === 'biovel' ? '২টি ট্যাবলেট' : m.id === 'prosalic' ? 'Scalp-এ লাগান, ১৫ মিনিট রাখুন' : m.id === 'bistar' ? '৫ মিনিট রেখে ধুয়ে ফেলুন' : ''}</div>
+          <div class="routine-desc">${m.id === 'fixal' ? '১টি ট্যাবলেট' : m.id === 'biovel' ? '১টি ট্যাবলেট' : m.id === 'prosalic' ? 'Scalp-এ লাগান, ১৫ মিনিট রাখুন' : m.id === 'bistar' ? '৫ মিনিট রেখে ধুয়ে ফেলুন' : ''}</div>
         </div>
         <button class="routine-check ${done ? 'done' : ''}" data-action="rtoggle" data-iid="${m.instanceId}" data-date="${todayStr}">
           ${done ? '✓' : ''}
         </button>
       </div>`;
-    }).join('') || `<div style="padding:.75rem 1rem;font-size:.82rem;color:var(--text-soft)">এই সময়ে কোনো treatment নেই</div>`;
+    }).join('') || `<div style="padding:.75rem 1rem;font-size:.82rem;color:var(--text-soft)">এই 시간에 কোনো treatment নেই</div>`;
 
     return `<div class="time-block card">
       <div class="time-block-header">
@@ -666,10 +774,12 @@ function renderRoutine(el) {
     </div>
   </div>`;
 
+  // UI রেন্ডারিং - এখানে দুপুরের ব্লকটি (lunch) সকাল আর শ্যাম্পুর মাঝখানে বসানো হয়েছে
   el.innerHTML = `<div class="page">
     <div class="section-label">আজকের Routine — ${todayStr}</div>
     ${blockHtml('☀️', 'সকাল', '৭টা – ৯টা', morning)}
-    ${blockHtml('🌤', 'দুপুর / বিকেল', 'যদি Shampoo দিন হয়', anytime, isShampooDay(todayStr) ? '' : '')}
+    ${blockHtml('🌤', 'দুপুর', 'দুপুরের খাবারের পর', lunch)} 
+    ${blockHtml('🧴', 'যেকোনো সময় / শ্যাম্পু', 'যদি Shampoo দিন হয়', anytime, isShampooDay(todayStr) ? '' : '')}
     ${blockHtml('🌙', 'রাত', 'ঘুমানোর আগে', night)}
     ${shampooWeekHtml}
     ${pickerHtml}
