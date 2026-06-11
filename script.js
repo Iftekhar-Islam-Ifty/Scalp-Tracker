@@ -8,17 +8,22 @@
 'use strict';
 
 // ── CONSTANTS ──────────────────────────────────────────────
-const START_DATE = new Date('2026-06-11');
-const FOLLOW_UP  = new Date('2026-08-11');
+// const START_DATE = new Date('2026-06-11');
+// const FOLLOW_UP = new Date('2026-08-11');
+// নতুন আপডেটেড কোড (এটি দিয়ে রিপ্লেস করুন):
+const START_DATE = new Date(2026, 5, 11);  // জাভাস্ক্রিপ্টে মাস ০ থেকে শুরু হয় (৫ = June)
+const FOLLOW_UP  = new Date(2026, 7, 11);  // 7 = August
 const TOTAL_DAYS = 61; // 2 months
 
 // Phase breakdown for Prosalic
-const PHASE1_END = new Date('2026-06-25'); // 15 days, 2x/day
-const PHASE2_END = new Date('2026-07-20'); // next 25 days, 1x/day
+// const PHASE1_END = new Date('2026-06-25'); // 15 days, 2x/day
+// const PHASE2_END = new Date('2026-07-20'); // next 25 days, 1x/day
+const PHASE1_END = new Date(2026, 5, 25);  // 5 = June
+const PHASE2_END = new Date(2026, 5, 20);  // 5 = June
 
-const DAYS_BN = ['রবি','সোম','মঙ্গল','বুধ','বৃহস্পতি','শুক্র','শনি'];
-const DAYS_EN = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-const MONTHS  = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const DAYS_BN = ['রবি', 'সোম', 'মঙ্গল', 'বুধ', 'বৃহস্পতি', 'শুক্র', 'শনি'];
+const DAYS_EN = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 // ── MEDICINE DATA ──────────────────────────────────────────
 const MEDICINES = [
@@ -40,7 +45,7 @@ const MEDICINES = [
     sideEffects: 'Scalp-এ হালকা জ্বলা (শুরুতে স্বাভাবিক), skin thinning (দীর্ঘমেয়াদে)',
     schedule: [
       { time: 'morning', label: 'সকাল', phase: 'Phase 1 (দিন ১–১৫): সকাল + রাত' },
-      { time: 'night',   label: 'রাত',  phase: 'Phase 2 (দিন ১৬–৪০): শুধু রাত' }
+      { time: 'night', label: 'রাত', phase: 'Phase 2 (দিন ১৬–৪০): শুধু রাত' }
     ],
     phases: [
       { name: 'Phase 1', days: '১–১৫ দিন', freq: 'দিনে ২ বার (সকাল + রাত)', start: '2026-06-11', end: '2026-06-25' },
@@ -132,7 +137,7 @@ function load() {
       const saved = JSON.parse(raw);
       state = { ...state, ...saved };
     }
-  } catch(e) {}
+  } catch (e) { }
 }
 
 // ── HELPERS ────────────────────────────────────────────────
@@ -141,11 +146,15 @@ function today() {
   return fmtDate(d);
 }
 function fmtDate(d) {
-  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
+// function parseDate(s) {
+//   const [y, m, d] = s.split('-').map(Number);
+//   return new Date(y, m - 1, d);
+// }
 function parseDate(s) {
-  const [y,m,d] = s.split('-').map(Number);
-  return new Date(y, m-1, d);
+  const [y, m, d] = s.split('-').map(Number);
+  return new Date(y, m - 1, d); // এটি অলরেডি লোকাল ডেট তৈরি করছে, যা পারফেক্ট
 }
 function daysBetween(a, b) {
   return Math.floor((b - a) / 86400000);
@@ -180,32 +189,65 @@ function isProsalicActive(dateStr) {
   const d = parseDate(dateStr);
   return d >= START_DATE && d <= parseDate('2026-07-20');
 }
+// function getMedsForDay(dateStr) {
+//   const d = parseDate(dateStr);
+//   if (d < START_DATE) return [];
+//   const meds = [];
+//   MEDICINES.forEach(m => {
+//     const end = parseDate(m.endDate);
+//     if (d > end) return;
+//     if (m.id === 'prosalic') {
+//       if (d <= PHASE1_END) {
+//         meds.push({ ...m, timeSlot: 'morning', instanceId: m.id+'_morning' });
+//         meds.push({ ...m, timeSlot: 'night',   instanceId: m.id+'_night' });
+//       } else if (d <= parseDate('2026-07-20')) {
+//         meds.push({ ...m, timeSlot: 'night', instanceId: m.id+'_night' });
+//       }
+//     } else if (m.id === 'bistar') {
+//       if (isShampooDay(dateStr)) {
+//         meds.push({ ...m, timeSlot: 'anytime', instanceId: m.id });
+//       }
+//     } else if (m.id === 'fixal') {
+//       meds.push({ ...m, timeSlot: 'night', instanceId: m.id });
+//     } else if (m.id === 'biovel') {
+//       meds.push({ ...m, timeSlot: 'morning', instanceId: m.id });
+//     }
+//   });
+//   return meds;
+// }
+
 function getMedsForDay(dateStr) {
   const d = parseDate(dateStr);
   if (d < START_DATE) return [];
   const meds = [];
+
   MEDICINES.forEach(m => {
-    const end = parseDate(m.endDate);
-    if (d > end) return;
+    // সেফটি চেক: যদি কোনো কারণে endDate না থাকে, তবে ডিফোল্ট অ্যান্ড ডেট ধরে নেবে
+    const targetEndDate = m.endDate ? parseDate(m.endDate) : parseDate('2026-08-10');
+    if (d > targetEndDate) return;
+
     if (m.id === 'prosalic') {
       if (d <= PHASE1_END) {
-        meds.push({ ...m, timeSlot: 'morning', instanceId: m.id+'_morning' });
-        meds.push({ ...m, timeSlot: 'night',   instanceId: m.id+'_night' });
+        meds.push({ ...m, timeSlot: 'morning', instanceId: m.id + '_morning' });
+        meds.push({ ...m, timeSlot: 'night', instanceId: m.id + '_night' });
       } else if (d <= parseDate('2026-07-20')) {
-        meds.push({ ...m, timeSlot: 'night', instanceId: m.id+'_night' });
+        meds.push({ ...m, timeSlot: 'night', instanceId: m.id + '_night' });
       }
     } else if (m.id === 'bistar') {
       if (isShampooDay(dateStr)) {
         meds.push({ ...m, timeSlot: 'anytime', instanceId: m.id });
       }
     } else if (m.id === 'fixal') {
+      // ফিক্সাল ট্যাবলেটের জন্য সঠিকভাবে ইন্সট্যান্স সেট করা হলো
       meds.push({ ...m, timeSlot: 'night', instanceId: m.id });
     } else if (m.id === 'biovel') {
+      // বায়োভেল ট্যাবলেটের জন্য সঠিকভাবে ইন্সট্যান্স সেট করা হলো
       meds.push({ ...m, timeSlot: 'morning', instanceId: m.id });
     }
   });
   return meds;
 }
+
 function getStatusForInstance(dateStr, instanceId) {
   return (state.logs[dateStr] || {})[instanceId] || 'pending';
 }
@@ -218,7 +260,7 @@ function getDayCompletion(dateStr) {
   const meds = getMedsForDay(dateStr);
   if (!meds.length) return null;
   const taken = meds.filter(m => getStatusForInstance(dateStr, m.instanceId) === 'taken').length;
-  return { taken, total: meds.length, pct: Math.round((taken/meds.length)*100) };
+  return { taken, total: meds.length, pct: Math.round((taken / meds.length) * 100) };
 }
 function getOverallAdherence() {
   let total = 0, taken = 0;
@@ -233,7 +275,7 @@ function getOverallAdherence() {
     });
     d.setDate(d.getDate() + 1);
   }
-  return total ? Math.round((taken/total)*100) : 0;
+  return total ? Math.round((taken / total) * 100) : 0;
 }
 
 // ── ROUTING ───────────────────────────────────────────────
@@ -244,10 +286,10 @@ function navigate(page) {
   });
   const titles = {
     dashboard: 'Dashboard',
-    medicines:  'Medicines',
-    routine:    'Daily Routine',
-    progress:   'Progress',
-    log:        'Log & Calendar'
+    medicines: 'Medicines',
+    routine: 'Daily Routine',
+    progress: 'Progress',
+    log: 'Log & Calendar'
   };
   document.getElementById('page-title').textContent = titles[page] || page;
   renderPage(page);
@@ -257,10 +299,10 @@ function renderPage(page) {
   const main = document.getElementById('main-content');
   const renderers = {
     dashboard: renderDashboard,
-    medicines:  renderMedicines,
-    routine:    renderRoutine,
-    progress:   renderProgress,
-    log:        renderLog
+    medicines: renderMedicines,
+    routine: renderRoutine,
+    progress: renderProgress,
+    log: renderLog
   };
   main.innerHTML = '';
   if (renderers[page]) renderers[page](main);
@@ -268,13 +310,13 @@ function renderPage(page) {
 
 // ── DASHBOARD ─────────────────────────────────────────────
 function renderDashboard(el) {
-  const tDay   = treatmentDay();
-  const pct    = treatmentProgress();
-  const rem    = daysRemaining();
+  const tDay = treatmentDay();
+  const pct = treatmentProgress();
+  const rem = daysRemaining();
   const todayStr = today();
   const todayMeds = getMedsForDay(todayStr);
-  const comp   = getDayCompletion(todayStr);
-  const adh    = getOverallAdherence();
+  const comp = getDayCompletion(todayStr);
+  const adh = getOverallAdherence();
 
   // Phase banner
   const now = todayDate();
@@ -310,16 +352,16 @@ function renderDashboard(el) {
   if (!todayMeds.length) {
     todayMedHtml = `<div class="empty-state"><div class="empty-icon">🎉</div><div class="empty-text">আজ কোনো medicine নেই</div></div>`;
   } else {
-    const sorted = [...todayMeds].sort((a,b) => {
-      const order = {morning:0, anytime:1, night:2};
-      return (order[a.timeSlot]||1) - (order[b.timeSlot]||1);
+    const sorted = [...todayMeds].sort((a, b) => {
+      const order = { morning: 0, anytime: 1, night: 2 };
+      return (order[a.timeSlot] || 1) - (order[b.timeSlot] || 1);
     });
     todayMedHtml = sorted.map(m => {
       const status = getStatusForInstance(todayStr, m.instanceId);
-      const chipClass = { morning:'chip-morning', night:'chip-night', anytime:'chip-anytime' }[m.timeSlot] || 'chip-anytime';
-      const chipLabel = { morning:'সকাল', night:'রাত', anytime:'যেকোনো সময়' }[m.timeSlot] || '';
-      const btnClass  = { taken:'taken', missed:'missed', pending:'' }[status] || '';
-      const btnIcon   = { taken:'✓', missed:'✗', pending:'◯' }[status] || '◯';
+      const chipClass = { morning: 'chip-morning', night: 'chip-night', anytime: 'chip-anytime' }[m.timeSlot] || 'chip-anytime';
+      const chipLabel = { morning: 'সকাল', night: 'রাত', anytime: 'যেকোনো সময়' }[m.timeSlot] || '';
+      const btnClass = { taken: 'taken', missed: 'missed', pending: '' }[status] || '';
+      const btnIcon = { taken: '✓', missed: '✗', pending: '◯' }[status] || '◯';
       const itemClass = status === 'taken' ? 'item-taken' : '';
       return `<div class="today-med-item ${itemClass}" data-medid="${m.id}" data-iid="${m.instanceId}">
         <div class="med-type-badge ${m.badge}">${m.icon}</div>
@@ -327,7 +369,7 @@ function renderDashboard(el) {
           <div class="med-name">${m.name}</div>
           <div class="med-detail">
             <span class="med-timing-chip ${chipClass}">${chipLabel}</span>
-            ${m.id==='fixal'?' · ২টি':''}${m.id==='biovel'?' · ২টি':''}
+            ${m.id === 'fixal' ? ' · ২টি' : ''}${m.id === 'biovel' ? ' · ২টি' : ''}
           </div>
         </div>
         <button class="take-btn ${btnClass}" data-action="toggle" data-iid="${m.instanceId}" data-date="${todayStr}">
@@ -401,7 +443,7 @@ function renderDashboard(el) {
             <svg class="ring-svg" viewBox="0 0 90 90">
               <circle cx="45" cy="45" r="36" fill="none" stroke="#e2e8f0" stroke-width="8"/>
               <circle cx="45" cy="45" r="36" fill="none" stroke="#2eb8a0" stroke-width="8"
-                stroke-dasharray="${2*Math.PI*36}" stroke-dashoffset="${2*Math.PI*36*(1-adh/100)}"
+                stroke-dasharray="${2 * Math.PI * 36}" stroke-dashoffset="${2 * Math.PI * 36 * (1 - adh / 100)}"
                 stroke-linecap="round" transform="rotate(-90 45 45)"/>
               <text x="45" y="49" text-anchor="middle" class="ring-num" font-size="18" font-weight="800" fill="#1a2744">${adh}%</text>
             </svg>
@@ -439,9 +481,9 @@ function renderDashboard(el) {
   el.querySelectorAll('[data-action="toggle"]').forEach(btn => {
     btn.addEventListener('click', e => {
       e.stopPropagation();
-      const iid  = btn.dataset.iid;
+      const iid = btn.dataset.iid;
       const date = btn.dataset.date;
-      const cur  = getStatusForInstance(date, iid);
+      const cur = getStatusForInstance(date, iid);
       const next = cur === 'pending' ? 'taken' : cur === 'taken' ? 'missed' : 'pending';
       setStatus(date, iid, next);
       showToast(next === 'taken' ? '✓ নেওয়া হয়েছে' : next === 'missed' ? '✗ Missed হিসেবে চিহ্নিত' : '↩ পূর্বে ফিরেছে');
@@ -511,9 +553,9 @@ function renderMedicines(el) {
   // Expand/collapse
   el.querySelectorAll('.med-full-header').forEach(h => {
     h.addEventListener('click', () => {
-      const body    = h.nextElementSibling;
+      const body = h.nextElementSibling;
       const chevron = h.querySelector('.med-full-chevron');
-      const open    = body.classList.toggle('open');
+      const open = body.classList.toggle('open');
       chevron.classList.toggle('open', open);
     });
   });
@@ -545,7 +587,7 @@ function renderMedCard(m) {
       <span class="med-full-icon">${m.icon}</span>
       <div>
         <div class="med-full-name">${m.name}</div>
-        <div class="med-full-sub">${m.category} · ${m.activeIngredient.substring(0,40)}...</div>
+        <div class="med-full-sub">${m.category} · ${m.activeIngredient.substring(0, 40)}...</div>
       </div>
       <span class="med-full-chevron">▼</span>
     </div>
@@ -572,14 +614,14 @@ function renderMedCard(m) {
 // ── ROUTINE PAGE ──────────────────────────────────────────
 function renderRoutine(el) {
   const todayStr = today();
-  const meds     = getMedsForDay(todayStr);
-  const morning  = meds.filter(m => m.timeSlot === 'morning');
-  const anytime  = meds.filter(m => m.timeSlot === 'anytime');
-  const night    = meds.filter(m => m.timeSlot === 'night');
+  const meds = getMedsForDay(todayStr);
+  const morning = meds.filter(m => m.timeSlot === 'morning');
+  const anytime = meds.filter(m => m.timeSlot === 'anytime');
+  const night = meds.filter(m => m.timeSlot === 'night');
 
   const shampooThisWeek = getShampooWeekDays();
 
-  const blockHtml = (icon, name, sub, items, extra='') => {
+  const blockHtml = (icon, name, sub, items, extra = '') => {
     const count = items.length;
     const doneCount = items.filter(m => getStatusForInstance(todayStr, m.instanceId) === 'taken').length;
     const itemsHtml = items.map(m => {
@@ -589,10 +631,10 @@ function renderRoutine(el) {
         <span class="routine-med-icon">${m.icon}</span>
         <div class="routine-info">
           <div class="routine-name">${m.name}</div>
-          <div class="routine-desc">${m.id==='fixal'?'২টি ট্যাবলেট':m.id==='biovel'?'২টি ট্যাবলেট':m.id==='prosalic'?'Scalp-এ লাগান, ১৫ মিনিট রাখুন':m.id==='bistar'?'৫ মিনিট রেখে ধুয়ে ফেলুন':''}</div>
+          <div class="routine-desc">${m.id === 'fixal' ? '২টি ট্যাবলেট' : m.id === 'biovel' ? '২টি ট্যাবলেট' : m.id === 'prosalic' ? 'Scalp-এ লাগান, ১৫ মিনিট রাখুন' : m.id === 'bistar' ? '৫ মিনিট রেখে ধুয়ে ফেলুন' : ''}</div>
         </div>
-        <button class="routine-check ${done?'done':''}" data-action="rtoggle" data-iid="${m.instanceId}" data-date="${todayStr}">
-          ${done?'✓':''}
+        <button class="routine-check ${done ? 'done' : ''}" data-action="rtoggle" data-iid="${m.instanceId}" data-date="${todayStr}">
+          ${done ? '✓' : ''}
         </button>
       </div>`;
     }).join('') || `<div style="padding:.75rem 1rem;font-size:.82rem;color:var(--text-soft)">এই সময়ে কোনো treatment নেই</div>`;
@@ -620,15 +662,15 @@ function renderRoutine(el) {
   const pickerHtml = `<div class="card card-pad" style="margin-bottom:.75rem">
     <div class="section-label" style="margin-bottom:.6rem">Shampoo-র দিন বেছে নিন (সপ্তাহে ২টি)</div>
     <div class="day-picker">
-      ${DAYS_EN.map((d,i) => `<button class="day-pick-btn ${(i===state.shampooDay1||i===state.shampooDay2)?'selected':''}" data-day="${i}">${DAYS_BN[i]}</button>`).join('')}
+      ${DAYS_EN.map((d, i) => `<button class="day-pick-btn ${(i === state.shampooDay1 || i === state.shampooDay2) ? 'selected' : ''}" data-day="${i}">${DAYS_BN[i]}</button>`).join('')}
     </div>
   </div>`;
 
   el.innerHTML = `<div class="page">
     <div class="section-label">আজকের Routine — ${todayStr}</div>
-    ${blockHtml('☀️','সকাল','৭টা – ৯টা', morning)}
-    ${blockHtml('🌤','দুপুর / বিকেল','যদি Shampoo দিন হয়', anytime, isShampooDay(todayStr) ? '' : '')}
-    ${blockHtml('🌙','রাত','ঘুমানোর আগে', night)}
+    ${blockHtml('☀️', 'সকাল', '৭টা – ৯টা', morning)}
+    ${blockHtml('🌤', 'দুপুর / বিকেল', 'যদি Shampoo দিন হয়', anytime, isShampooDay(todayStr) ? '' : '')}
+    ${blockHtml('🌙', 'রাত', 'ঘুমানোর আগে', night)}
     ${shampooWeekHtml}
     ${pickerHtml}
 
@@ -643,9 +685,9 @@ function renderRoutine(el) {
 
   el.querySelectorAll('[data-action="rtoggle"]').forEach(btn => {
     btn.addEventListener('click', () => {
-      const iid  = btn.dataset.iid;
+      const iid = btn.dataset.iid;
       const date = btn.dataset.date;
-      const cur  = getStatusForInstance(date, iid);
+      const cur = getStatusForInstance(date, iid);
       setStatus(date, iid, cur === 'taken' ? 'pending' : 'taken');
       showToast(cur !== 'taken' ? '✓ সম্পন্ন' : '↩ পূর্বে ফিরেছে');
       renderPage('routine');
@@ -675,16 +717,16 @@ function renderRoutine(el) {
 }
 
 function getShampooWeekDays() {
-  const now   = new Date();
-  const dow   = now.getDay();
+  const now = new Date();
+  const dow = now.getDay();
   const start = new Date(now); start.setDate(now.getDate() - dow);
   let html = '';
   for (let i = 0; i < 7; i++) {
     const d = new Date(start); d.setDate(start.getDate() + i);
     const ds = fmtDate(d);
     const isToday = ds === today();
-    const sDay    = d.getDay() === state.shampooDay1 || d.getDay() === state.shampooDay2;
-    const done    = sDay && getStatusForInstance(ds,'bistar') === 'taken';
+    const sDay = d.getDay() === state.shampooDay1 || d.getDay() === state.shampooDay2;
+    const done = sDay && getStatusForInstance(ds, 'bistar') === 'taken';
     let cls = 'sday-none';
     if (sDay && isToday) cls = 'sday-today';
     else if (done) cls = 'sday-done';
@@ -697,7 +739,7 @@ function getShampooWeekDays() {
 // ── PROGRESS PAGE ─────────────────────────────────────────
 function renderProgress(el) {
   const todayStr = today();
-  const existing = state.scalpLogs[todayStr] || { itching:5, dandruff:5, scaling:5, pain:3, notes:'' };
+  const existing = state.scalpLogs[todayStr] || { itching: 5, dandruff: 5, scaling: 5, pain: 3, notes: '' };
 
   const photos = state.photos.slice().reverse().slice(0, 9);
   const photoGridHtml = photos.length ? photos.map(p => `
@@ -714,15 +756,15 @@ function renderProgress(el) {
     <div class="section-label">আজকের Scalp অবস্থা — ${todayStr}</div>
     <div class="card">
       <div class="scalp-log-form">
-        ${renderSlider('itching','চুলকানি 😤',existing.itching,'itch')}
-        ${renderSlider('dandruff','Dandruff/Flaking ❄️',existing.dandruff,'dand')}
-        ${renderSlider('scaling','Scaling/Plaque 🔷',existing.scaling,'scal')}
-        ${renderSlider('pain','ব্যথা/জ্বলা 🔥',existing.pain,'pain')}
+        ${renderSlider('itching', 'চুলকানি 😤', existing.itching, 'itch')}
+        ${renderSlider('dandruff', 'Dandruff/Flaking ❄️', existing.dandruff, 'dand')}
+        ${renderSlider('scaling', 'Scaling/Plaque 🔷', existing.scaling, 'scal')}
+        ${renderSlider('pain', 'ব্যথা/জ্বলা 🔥', existing.pain, 'pain')}
         <div>
           <div style="font-size:.85rem;font-weight:700;margin-bottom:.4rem">নোট</div>
           <textarea id="scalp-notes" rows="2"
             style="width:100%;border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:.65rem;font-size:.85rem;font-family:inherit;resize:none"
-            placeholder="আজ কেমন লাগছে? কোনো পরিবর্তন?">${existing.notes||''}</textarea>
+            placeholder="আজ কেমন লাগছে? কোনো পরিবর্তন?">${existing.notes || ''}</textarea>
         </div>
         <button class="submit-btn" id="save-scalp">আজকের অবস্থা সেভ করুন</button>
       </div>
@@ -749,15 +791,15 @@ function renderProgress(el) {
           <div class="compare-card-label">প্রথম ছবি<br/>${state.photos[0].date}</div>
         </div>
         <div class="compare-card">
-          <img src="${state.photos[state.photos.length-1].dataUrl}" alt="Latest photo"/>
-          <div class="compare-card-label">সর্বশেষ ছবি<br/>${state.photos[state.photos.length-1].date}</div>
+          <img src="${state.photos[state.photos.length - 1].dataUrl}" alt="Latest photo"/>
+          <div class="compare-card-label">সর্বশেষ ছবি<br/>${state.photos[state.photos.length - 1].date}</div>
         </div>
       </div>
     </div>` : ''}
   </div>`;
 
   // Sliders live update
-  ['itch','dand','scal','pain'].forEach(id => {
+  ['itch', 'dand', 'scal', 'pain'].forEach(id => {
     const sl = el.querySelector(`#sl-${id}`);
     const vl = el.querySelector(`#vl-${id}`);
     if (sl && vl) sl.addEventListener('input', () => { vl.textContent = sl.value; });
@@ -766,11 +808,11 @@ function renderProgress(el) {
   // Save scalp log
   el.querySelector('#save-scalp').addEventListener('click', () => {
     state.scalpLogs[todayStr] = {
-      itching:  +el.querySelector('#sl-itch').value,
+      itching: +el.querySelector('#sl-itch').value,
       dandruff: +el.querySelector('#sl-dand').value,
-      scaling:  +el.querySelector('#sl-scal').value,
-      pain:     +el.querySelector('#sl-pain').value,
-      notes:    el.querySelector('#scalp-notes').value
+      scaling: +el.querySelector('#sl-scal').value,
+      pain: +el.querySelector('#sl-pain').value,
+      notes: el.querySelector('#scalp-notes').value
     };
     save();
     showToast('✓ Scalp log সেভ হয়েছে');
@@ -785,7 +827,7 @@ function renderProgress(el) {
     files.forEach(file => {
       const reader = new FileReader();
       reader.onload = ev => {
-        state.photos.push({ id: Date.now()+'_'+Math.random().toString(36).slice(2), date: todayStr, dataUrl: ev.target.result });
+        state.photos.push({ id: Date.now() + '_' + Math.random().toString(36).slice(2), date: todayStr, dataUrl: ev.target.result });
         save();
         renderPage('progress');
       };
@@ -806,14 +848,14 @@ function renderProgress(el) {
 }
 
 function renderSlider(key, label, val, id) {
-  const emojis = ['😊','😌','😐','😕','😣','😖','😣','😖','😣','😖','😫'];
+  const emojis = ['😊', '😌', '😐', '😕', '😣', '😖', '😣', '😖', '😣', '😖', '😫'];
   return `<div class="symptom-slider-wrap">
     <div class="symptom-label-row">
       <span class="symptom-name">${label}</span>
       <span class="symptom-val" id="vl-${id}">${val}</span>
     </div>
     <input type="range" id="sl-${id}" min="0" max="10" value="${val}"/>
-    <div class="emoji-row">${[0,2,5,7,10].map(n=>`<span class="emoji-level">${emojis[n]}</span>`).join('')}</div>
+    <div class="emoji-row">${[0, 2, 5, 7, 10].map(n => `<span class="emoji-level">${emojis[n]}</span>`).join('')}</div>
   </div>`;
 }
 
@@ -826,13 +868,13 @@ function renderScalpTrend() {
   const hasData = days.some(d => state.scalpLogs[d]);
   if (!hasData) return `<div style="text-align:center;color:var(--text-soft);font-size:.83rem;padding:.5rem">এখনো Scalp log নেই — প্রতিদিন লগ করুন</div>`;
 
-  const metrics = ['itching','dandruff','scaling'];
-  const colors  = ['#e05252','#2eb8a0','#f5a623'];
-  const labels  = ['চুলকানি','Dandruff','Scaling'];
+  const metrics = ['itching', 'dandruff', 'scaling'];
+  const colors = ['#e05252', '#2eb8a0', '#f5a623'];
+  const labels = ['চুলকানি', 'Dandruff', 'Scaling'];
 
   const maxH = 80;
   const barW = 8;
-  const gap  = 3;
+  const gap = 3;
   const grpW = metrics.length * (barW + gap) + 6;
   const svgW = days.length * grpW + 20;
 
@@ -840,22 +882,22 @@ function renderScalpTrend() {
   days.forEach((d, di) => {
     const log = state.scalpLogs[d];
     metrics.forEach((m, mi) => {
-      const val  = log ? (log[m] || 0) : 0;
-      const h    = (val / 10) * maxH;
-      const x    = 10 + di * grpW + mi * (barW + gap);
-      const y    = maxH - h + 10;
-      svgBars += `<rect x="${x}" y="${y}" width="${barW}" height="${h}" rx="3" fill="${colors[mi]}" opacity="${log?1:0.2}"/>`;
+      const val = log ? (log[m] || 0) : 0;
+      const h = (val / 10) * maxH;
+      const x = 10 + di * grpW + mi * (barW + gap);
+      const y = maxH - h + 10;
+      svgBars += `<rect x="${x}" y="${y}" width="${barW}" height="${h}" rx="3" fill="${colors[mi]}" opacity="${log ? 1 : 0.2}"/>`;
     });
     const label = d.slice(8);
-    svgBars += `<text x="${10 + di*grpW + grpW/2 - 5}" y="${maxH+25}" font-size="9" fill="#8898aa" text-anchor="middle">${label}</text>`;
+    svgBars += `<text x="${10 + di * grpW + grpW / 2 - 5}" y="${maxH + 25}" font-size="9" fill="#8898aa" text-anchor="middle">${label}</text>`;
   });
 
-  return `<svg width="100%" viewBox="0 0 ${svgW} ${maxH+35}" style="overflow:visible">
-    <line x1="10" y1="${maxH+10}" x2="${svgW-10}" y2="${maxH+10}" stroke="#e2e8f0" stroke-width="1"/>
+  return `<svg width="100%" viewBox="0 0 ${svgW} ${maxH + 35}" style="overflow:visible">
+    <line x1="10" y1="${maxH + 10}" x2="${svgW - 10}" y2="${maxH + 10}" stroke="#e2e8f0" stroke-width="1"/>
     ${svgBars}
   </svg>
   <div style="display:flex;gap:.75rem;flex-wrap:wrap;margin-top:.25rem">
-    ${metrics.map((m,i) => `<div style="display:flex;align-items:center;gap:.3rem;font-size:.72rem;color:var(--text-soft)">
+    ${metrics.map((m, i) => `<div style="display:flex;align-items:center;gap:.3rem;font-size:.72rem;color:var(--text-soft)">
       <span style="width:8px;height:8px;border-radius:2px;background:${colors[i]};display:inline-block"></span>${labels[i]}</div>`).join('')}
   </div>`;
 }
@@ -866,9 +908,9 @@ function renderLog(el) {
 
   el.innerHTML = `<div class="page">
     <div class="log-tabs card" style="margin-bottom:.25rem">
-      <button class="log-tab ${mode==='daily'?'active':''}" data-mode="daily">দৈনিক</button>
-      <button class="log-tab ${mode==='weekly'?'active':''}" data-mode="weekly">সাপ্তাহিক</button>
-      <button class="log-tab ${mode==='monthly'?'active':''}" data-mode="monthly">মাসিক</button>
+      <button class="log-tab ${mode === 'daily' ? 'active' : ''}" data-mode="daily">দৈনিক</button>
+      <button class="log-tab ${mode === 'weekly' ? 'active' : ''}" data-mode="weekly">সাপ্তাহিক</button>
+      <button class="log-tab ${mode === 'monthly' ? 'active' : ''}" data-mode="monthly">মাসিক</button>
     </div>
     <div id="log-content">${renderLogContent(mode)}</div>
   </div>`;
@@ -895,8 +937,8 @@ function bindLogExpand(el) {
 }
 
 function renderLogContent(mode) {
-  if (mode === 'daily')   return renderDailyLog();
-  if (mode === 'weekly')  return renderWeeklyLog();
+  if (mode === 'daily') return renderDailyLog();
+  if (mode === 'weekly') return renderWeeklyLog();
   if (mode === 'monthly') return renderMonthlyLog();
   return '';
 }
@@ -905,7 +947,7 @@ function renderDailyLog() {
   const days = [];
   const d = new Date(START_DATE);
   const now = todayDate();
-  while (d <= now) { days.push(fmtDate(d)); d.setDate(d.getDate()+1); }
+  while (d <= now) { days.push(fmtDate(d)); d.setDate(d.getDate() + 1); }
   days.reverse();
   if (!days.length) return `<div class="empty-state"><div class="empty-icon">📅</div><div class="empty-text">এখনো কোনো দিন শুরু হয়নি</div></div>`;
 
@@ -915,14 +957,14 @@ function renderDailyLog() {
     const comp = getDayCompletion(ds);
     const pillCls = comp.pct === 100 ? 'pill-100' : comp.pct >= 50 ? 'pill-mid' : comp.taken > 0 ? 'pill-low' : 'pill-zero';
     const pillTxt = comp.pct === 100 ? '✓ সম্পন্ন' : `${comp.taken}/${comp.total}`;
-    const dayNum  = daysBetween(START_DATE, parseDate(ds)) + 1;
-    const scalpL  = state.scalpLogs[ds];
+    const dayNum = daysBetween(START_DATE, parseDate(ds)) + 1;
+    const scalpL = state.scalpLogs[ds];
 
     const medsHtml = meds.map(m => {
       const s = getStatusForInstance(ds, m.instanceId);
       return `<div class="log-item-row">
-        <span class="log-dot ${s==='taken'?'dot-taken':s==='missed'?'dot-missed':'dot-pending'}"></span>
-        <span>${m.name} (${m.timeSlot==='morning'?'সকাল':m.timeSlot==='night'?'রাত':'যেকোনো সময়'}) — ${s==='taken'?'নেওয়া হয়েছে':s==='missed'?'মিস হয়েছে':'অপেক্ষায়'}</span>
+        <span class="log-dot ${s === 'taken' ? 'dot-taken' : s === 'missed' ? 'dot-missed' : 'dot-pending'}"></span>
+        <span>${m.name} (${m.timeSlot === 'morning' ? 'সকাল' : m.timeSlot === 'night' ? 'রাত' : 'যেকোনো সময়'}) — ${s === 'taken' ? 'নেওয়া হয়েছে' : s === 'missed' ? 'মিস হয়েছে' : 'অপেক্ষায়'}</span>
       </div>`;
     }).join('');
 
@@ -962,14 +1004,14 @@ function renderWeeklyLog() {
     const wk = fmtDate(weekStart);
     if (!weeks[wk]) weeks[wk] = [];
     weeks[wk].push(ds);
-    d.setDate(d.getDate()+1);
+    d.setDate(d.getDate() + 1);
   }
   return Object.entries(weeks).reverse().map(([wk, days]) => {
-    let t=0, tk=0;
-    days.forEach(ds => { const c = getDayCompletion(ds); if(c){t+=c.total;tk+=c.taken;} });
-    const pct = t ? Math.round((tk/t)*100) : 0;
-    const weekEnd = new Date(parseDate(wk)); weekEnd.setDate(weekEnd.getDate()+6);
-    const pillCls = pct===100?'pill-100':pct>=50?'pill-mid':tk>0?'pill-low':'pill-zero';
+    let t = 0, tk = 0;
+    days.forEach(ds => { const c = getDayCompletion(ds); if (c) { t += c.total; tk += c.taken; } });
+    const pct = t ? Math.round((tk / t) * 100) : 0;
+    const weekEnd = new Date(parseDate(wk)); weekEnd.setDate(weekEnd.getDate() + 6);
+    const pillCls = pct === 100 ? 'pill-100' : pct >= 50 ? 'pill-mid' : tk > 0 ? 'pill-low' : 'pill-zero';
     return `<div class="log-day-card">
       <div class="log-day-header">
         <div>
@@ -991,21 +1033,21 @@ function renderMonthlyLog() {
   const now = todayDate();
   while (d <= now) {
     const ds = fmtDate(d);
-    const mk = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+    const mk = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
     if (!months[mk]) months[mk] = [];
     months[mk].push(ds);
-    d.setDate(d.getDate()+1);
+    d.setDate(d.getDate() + 1);
   }
   return Object.entries(months).reverse().map(([mk, days]) => {
-    let t=0, tk=0;
-    days.forEach(ds => { const c = getDayCompletion(ds); if(c){t+=c.total;tk+=c.taken;} });
-    const pct = t ? Math.round((tk/t)*100) : 0;
-    const [y,m] = mk.split('-');
-    const pillCls = pct===100?'pill-100':pct>=50?'pill-mid':tk>0?'pill-low':'pill-zero';
+    let t = 0, tk = 0;
+    days.forEach(ds => { const c = getDayCompletion(ds); if (c) { t += c.total; tk += c.taken; } });
+    const pct = t ? Math.round((tk / t) * 100) : 0;
+    const [y, m] = mk.split('-');
+    const pillCls = pct === 100 ? 'pill-100' : pct >= 50 ? 'pill-mid' : tk > 0 ? 'pill-low' : 'pill-zero';
     return `<div class="log-day-card">
       <div class="log-day-header">
         <div>
-          <div class="log-day-date">${MONTHS[parseInt(m)-1]} ${y}</div>
+          <div class="log-day-date">${MONTHS[parseInt(m) - 1]} ${y}</div>
           <div class="log-day-sub">${days.length} দিন tracked</div>
         </div>
         <span class="log-day-pill ${pillCls}">${pct}%</span>
@@ -1021,7 +1063,7 @@ function renderMonthlyLog() {
 // ── MODAL ─────────────────────────────────────────────────
 function openMedModal(m) {
   const overlay = document.getElementById('modal-overlay');
-  const box     = document.getElementById('modal-box');
+  const box = document.getElementById('modal-box');
   box.innerHTML = `
     <div class="modal-handle"></div>
     <button class="modal-close" id="modal-close">✕</button>
@@ -1069,17 +1111,17 @@ function closeModal() {
 // ── SETTINGS / REMINDERS ─────────────────────────────────
 function openSettings() {
   const overlay = document.getElementById('modal-overlay');
-  const box     = document.getElementById('modal-box');
+  const box = document.getElementById('modal-box');
   box.innerHTML = `
     <div class="modal-handle"></div>
     <button class="modal-close" id="modal-close">✕</button>
     <div class="modal-title">⚙️ Settings</div>
     <div class="modal-sub" style="margin-bottom:1rem">Reminders & Preferences</div>
     <div class="card" style="margin-bottom:1rem">
-      ${renderToggle('morning','সকালের Reminder','সকাল ৮টায় সতর্কতা')}
-      ${renderToggle('night','রাতের Reminder','রাত ১০টায় সতর্কতা')}
-      ${renderToggle('shampoo','Shampoo Reminder','Shampoo-র দিন সতর্কতা')}
-      ${renderToggle('followup','Follow-up Reminder','১০ আগস্ট ২০২৬')}
+      ${renderToggle('morning', 'সকালের Reminder', 'সকাল ৮টায় সতর্কতা')}
+      ${renderToggle('night', 'রাতের Reminder', 'রাত ১০টায় সতর্কতা')}
+      ${renderToggle('shampoo', 'Shampoo Reminder', 'Shampoo-র দিন সতর্কতা')}
+      ${renderToggle('followup', 'Follow-up Reminder', '১০ আগস্ট ২০২৬')}
     </div>
     <div class="card card-pad" style="margin-bottom:1rem">
       <div style="font-size:.85rem;font-weight:700;margin-bottom:.5rem">Shampoo দিন</div>
@@ -1114,7 +1156,7 @@ function renderToggle(key, label, sub) {
   const on = state.reminders[key];
   return `<div class="settings-item">
     <div><div class="settings-label">${label}</div><div class="settings-sub">${sub}</div></div>
-    <div class="toggle ${on?'on':''}" data-key="${key}"></div>
+    <div class="toggle ${on ? 'on' : ''}" data-key="${key}"></div>
   </div>`;
 }
 
@@ -1124,9 +1166,9 @@ function scheduleReminder(key) {
     if (perm !== 'granted') return;
     const msgs = {
       morning: 'সকালের medicine নেওয়ার সময় হয়েছে! Biovel ২টি + Prosalic (Phase 1)',
-      night:   'রাতের medicine নেওয়ার সময় হয়েছে! Fixal ২টি + Prosalic',
+      night: 'রাতের medicine নেওয়ার সময় হয়েছে! Fixal ২টি + Prosalic',
       shampoo: 'আজ Bistar Shampoo ব্যবহারের দিন!',
-      followup:'Dr. Sabrina Shahrin-এর Follow-up ১০ আগস্ট ২০২৬'
+      followup: 'Dr. Sabrina Shahrin-এর Follow-up ১০ আগস্ট ২০২৬'
     };
     showToast('🔔 Reminder চালু হয়েছে');
     // Immediate demo notification
@@ -1164,13 +1206,22 @@ window.addEventListener('beforeinstallprompt', e => {
 // ── SERVICE WORKER ────────────────────────────────────────
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('sw.js').catch(() => {});
+    navigator.serviceWorker.register('sw.js').catch(() => { });
   });
 }
 
 // ── INIT ──────────────────────────────────────────────────
+// document.addEventListener('DOMContentLoaded', () => {
+//   load();
+
+// ── INIT ──────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
+  localStorage.clear(); // 👈 এই লাইনটি নতুন যোগ করুন (শুধু একবারের জন্য)
   load();
+
+  // ── এই ২ লাইনের কোডটি নতুন যোগ করুন ──
+  state.currentPage = 'dashboard'; 
+  save();
 
   // Splash
   setTimeout(() => {

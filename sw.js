@@ -3,7 +3,7 @@
    Offline-first caching strategy
    ================================================ */
 
-const CACHE_NAME = 'iftekhar-tracker-v1';
+const CACHE_NAME = 'iftekhar-tracker-v2';
 const ASSETS = [
   './',
   './index.html',
